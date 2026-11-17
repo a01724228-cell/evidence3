@@ -520,4 +520,10 @@ public:
     }
 };
 
+class Node {
+public: 
+   string name;
+   int x;
+   int y;
+};
 
