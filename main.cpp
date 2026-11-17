@@ -6,19 +6,12 @@
 #include <algorithm>
 using namespace std;
 
-// Value returned by pop, getTop, dequeue and getFront when the structure is
-// empty. It is never a valid node index (indices are 0 or greater), so it
-// cannot be confused with real data. The caller should check isEmpty() first.
 const int EMPTY_VALUE = -1;
 
-// Value stored in the adjacency matrix when there is NO connection.
-// A connection with cost 0 is valid, so 0 cannot mean "no connection".
 const int NO_EDGE = -1;
 
-// Value used as "infinite" distance. It is never added to another cost.
 const int INFINITE_COST = 1000000000;
 
-// Maximum cost accepted for one connection (avoids overflow when adding).
 const int MAX_COST = 1000000;
 
 const string DEFAULT_FILE_NAME = "test.txt";
@@ -179,7 +172,6 @@ public:
         size = 0;
     }
 
-    // Copies are disabled for the same reason as in Stack.
     Queue(const Queue& other) = delete;
     Queue& operator=(const Queue& other) = delete;
 
