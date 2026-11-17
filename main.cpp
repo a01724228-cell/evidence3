@@ -219,11 +219,28 @@ public:
     }
 };
 
+class Node {
+public: 
+   string name;
+   int x;
+   int y;
+};
+
 class Graph {
 private:
     int** matrix;
     int N;
     int E;
+    Node** nodes;
+
+    int getIndex(string name) {
+        for (int i = 0; i < N; i++) {
+            if (nodes[i].name == name) {
+                return i;
+            }
+        }
+        return -1;
+    };
 public:
     /* Description: Constructor for the Graph class that initializes an N x N
     -               adjacency matrix filled with zeros.
@@ -251,6 +268,12 @@ public:
             delete[] matrix[i];
         }
         delete[] matrix;
+    }
+
+    void setNode(int index, string name, int x, int y) {
+        nodes[index].name = name;
+        nodes[index].x = x;
+        nodes[index].y = y;
     }
 
     /* Description: Adds an edge between nodes a and b with a given weight
@@ -520,10 +543,5 @@ public:
     }
 };
 
-class Node {
-public: 
-   string name;
-   int x;
-   int y;
-};
+
 
