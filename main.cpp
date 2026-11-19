@@ -324,10 +324,37 @@ public:
 // Represents one building of the campus.
 class Node {
 public:
-    string name = "";
+    char name;
     int x = 0;
     int y = 0;
+
+    Node();
+    Node(char name, int x, int y);
 };
+
+/* Description: the basic Constructor for the Node class with no parameters given.
+It sets the name to a "non-existing" state with '-' and leaves x and y as 0.
+- Parameters: None
+- Return Value: None
+- Complexity: O(1)
+*/
+Node::Node(){
+    name = '-';
+}
+
+/* Description: the basic Constructor for the Node class with parameters given.
+It sets the name, x and y of the Node.
+- Parameters: name - the character that represents the node
+-             x - the (x) coordenate of the position of the node
+-             y - the (y) coordenate of the position of the node
+- Return Value: None
+- Complexity: O(1)
+*/
+Node::Node(char name, int x, int y){
+    this->name = name;
+    this->x = x;
+    this->y = y;
+}
 
 // Represents one bidirectional connection between two node indices.
 // It is always stored with from < to, so A-B and B-A are the same connection.
@@ -336,9 +363,40 @@ public:
     int from = -1;
     int to = -1;
     int cost = 0;
+
+    Edge();
+    Edge(int from, int to, int cost);
 };
 
+/* Description: the basic Constructor for the Edge class with no parameters given.
+It does nothing since the class already sets all 3 int variables from, to, and cost to their "null" state.
+- Parameters: None
+- Return Value: None
+- Complexity: O(1)
+*/
+Edge::Edge(){
+    // Does nothing, default values are already given.
+}
+
+/* Description: the basic Constructor for the Edge class with parameters given.
+It sets from to the minimum value between the parameters "from" and "to", and sets to to the maximum,
+cost is set to the parameter "cost".
+
+- Parameters: from - the Node index the edge comes from
+-             to - the Node index the edge ends on
+-             cost - the weight it takes to reach the "to" Node comming from the "from" Node
+- Return Value: None
+- Complexity: O(1)
+*/
+Edge::Edge(int from, int to, int cost){
+    this->from = min(from, to);
+    this->to = max(from, to);
+    this->cost = cost;
+}
+
 // Connection read from the file, still written with building names.
+/*  Note: Currently not used. The purpose wasn't seen as necesarry and
+    was replaced with more class Edge variables. */
 class NamedEdge {
 public:
     string nameA = "";
@@ -349,12 +407,12 @@ public:
 // All the data read from the input file.
 class InputData {
 public:
+    int N, E;
     vector<Node> initialNodes;
-    vector<NamedEdge> initialEdges;
-    string failedNameA = "";
-    string failedNameB = "";
+    vector<Edge> initialEdges;
+    Edge failedEdge;
     Node newNode;
-    vector<NamedEdge> newEdges;
+    vector<Edge> newEdges;
 };
 
 // Independent copy of one installed network (one stage of the simulation).
@@ -492,7 +550,7 @@ public:
     - Return Value: int (index of the node, or -1 if it does not exist)
     - Complexity: O(n)
      */
-    int getIndex(string name) {
+    int getIndex(char name) {
         int index = -1;
         int i = 0;
         while (i < nodeCount && index == -1) {
@@ -521,7 +579,7 @@ public:
         }
         return valid;
     }
-
+};
   
 void runSimulation(Graph& candidates, InputData& data) {
     Configuration states[STATE_COUNT];
@@ -535,6 +593,92 @@ void runSimulation(Graph& candidates, InputData& data) {
     }
     printComparison(states);
     runMenu(states, candidates);
+}
+
+/* Description: Opens and reads the input file, parsing the number of nodes (N)
+and edges (E), loading the initial nodes into data.initialNodes,
+and validating and loading the initial edges into data.initialEdges.
+
+- Parameters: fileName - path or name of the input file to read
+-             data - reference to the InputData struct where parsed data is stored
+- Return Value: bool (true if the file was read and validated without errors, false otherwise)
+- Complexity: O(N * E)
+ */
+bool readInputFile(string fileName,InputData &data) {
+    string line;
+    // node info
+    char letter;
+    int x, y;
+    // edge info
+    char a, b;
+    int w;
+    ifstream inFile(fileName);
+
+    if (inFile.is_open()) {
+        getline(inFile, line);
+        istringstream header(line);
+        header >> data.N >> data.E;
+
+        cout << "Nodes N: " << data.N << endl;
+        cout << "Edges E: " << data.E << endl << endl;
+
+        // currently at the summary of initial Nodes and Edges
+        getline(inFile, line);
+        // Currently at an empty line \n
+        getline(inFile, line);
+        // Currently at header "# NODES"
+
+        for (int i = 0; i < data.N; i++) {
+            getline(inFile, line);
+            istringstream node(line);
+            node >> letter >> x >> y;
+            data.initialNodes.push_back(Node(letter, x, y));
+        }
+
+        // Currently at last initial Node
+        getline(inFile, line);
+        // Currently at an empty line \n
+        getline(inFile, line);
+        // Currently at header "# EDGES"
+
+        for (int i = 0; i < data.E; i++) {
+            getline(inFile, line);
+            istringstream edge(line);
+            edge >> a >> b;
+            int indexa = -1;
+            int indexb = -1;
+            for (int j = 0; j < data.N; j++) {
+                if (data.initialNodes[j].name == a) {
+                    indexa = j;
+                }
+                if (data.initialNodes[j].name == b) {
+                    indexb = j;
+                }
+            }
+            if (indexa == -1 or indexb == -1) {
+                cout << "[Error] readInputFile: Non-existent node." << endl;
+                return false;
+            } else if(indexa == indexb) {
+                cout << "[Error] readInputFile: The nodes were the same." << endl;
+                return false;
+            }
+            if (!(edge >> w)) {
+                cout << "[Error] readInputFile: The weight was not listed." << endl;
+                return false;
+            } else {
+                if (!(w < 0)) {
+                    cout << "[Error] readInputFile: The weight can't be negative." << endl;
+                    return false;
+                }
+                else {
+                    data.initialEdges.push_back(Edge(indexa, indexb, w));
+                }
+            }
+        }
+    }
+
+    //placeholder return
+    return true;
 }
 
 /* Description: Main function. Asks for the input file, reads and validates
