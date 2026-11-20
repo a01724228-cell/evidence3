@@ -328,33 +328,30 @@ public:
     int x = 0;
     int y = 0;
 
-    Node();
-    Node(char name, int x, int y);
-};
+    /* Description: the basic Constructor for the Node class with no parameters given.
+    -               It sets the name to a "non-existing" state with '-' and leaves x and y as 0.
+    - Parameters: None
+    - Return Value: None
+    - Complexity: O(1)
+    */
+    Node() {
+       name = '-';
+    }
 
-/* Description: the basic Constructor for the Node class with no parameters given.
--               It sets the name to a "non-existing" state with '-' and leaves x and y as 0.
-- Parameters: None
-- Return Value: None
-- Complexity: O(1)
-*/
-Node::Node(){
-    name = '-';
-}
-
-/* Description: the basic Constructor for the Node class with parameters given.
--               It sets the name, x and y of the Node.
+    /* Description: the basic Constructor for the Node class with parameters given.
+    -               It sets the name, x and y of the Node.
 - Parameters: name - the character that represents the node
 -             x - the (x) coordenate of the position of the node
 -             y - the (y) coordenate of the position of the node
 - Return Value: None
 - Complexity: O(1)
 */
-Node::Node(char name, int x, int y){
-    this->name = name;
-    this->x = x;
-    this->y = y;
-}
+    Node(char name, int x, int y) {
+        this->name = name;
+        this->x = x;
+        this->y = y;
+    }
+};
 
 // Represents one bidirectional connection between two node indices.
 // It is always stored with from < to, so A-B and B-A are the same connection.
