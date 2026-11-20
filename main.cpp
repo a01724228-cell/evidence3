@@ -22,7 +22,7 @@ const int INFINITE_COST = 1000000000;
 // Maximum cost accepted for one connection (avoids overflow when adding).
 const int MAX_COST = 1000000;
 
-const string DEFAULT_FILE_NAME = "test.txt";
+const string DEFAULT_FILE_NAME = "test_fix.txt";
 
 const int STATE_COUNT = 4;
 
@@ -570,7 +570,7 @@ public:
     - Return Value: bool (true if the index was valid, if not false)
     - Complexity: O(1)
      */
-    bool setNode(int index, string name, int x, int y) {
+    bool setNode(int index, char name, int x, int y) {
         bool valid = isValidIndex(index);
         if (valid) {
             nodes[index].name = name;
@@ -581,18 +581,38 @@ public:
     }
 };
   
-void runSimulation(Graph& candidates, InputData& data) {
-    Configuration states[STATE_COUNT];
-    runOriginalStage(candidates, states[0]);
-    bool failureApplied = runFailureStage(candidates, data, states[0], states[1]);
-    runRestorationStage(candidates, states[0], states[2]);
-    if (states[2].exists) {
-        runExpansionStage(candidates, data, states[2], states[3], failureApplied);
-    } else {
-        runExpansionStage(candidates, data, states[1], states[3], failureApplied);
+// void runSimulation(Graph& candidates, InputData& data) {
+//     Configuration states[STATE_COUNT];
+//     runOriginalStage(candidates, states[0]);
+//     bool failureApplied = runFailureStage(candidates, data, states[0], states[1]);
+//     runRestorationStage(candidates, states[0], states[2]);
+//     if (states[2].exists) {
+//         runExpansionStage(candidates, data, states[2], states[3], failureApplied);
+//     } else {
+//         runExpansionStage(candidates, data, states[1], states[3], failureApplied);
+//     }
+//     printComparison(states);
+//     runMenu(states, candidates);
+// }
+
+/* Description: Searches for a node by its character name among the initial nodes
+-              (indices 0 to N - 1) and the new expansion node (index N).
+- Parameters: data - reference to the InputData class containing the nodes
+-             a - character name of the node to search for
+- Return Value: int (index of the node if found, N if it matches newNode, or -1 if it does not exist)
+- Complexity: O(N)
+ */
+int indexSearcher(InputData &data, char a) {
+    int index = -1;
+    if (data.newNode.name == a) { index = data.N;}
+    int i = 0;
+    while (i < data.N && index == -1) {
+        if (data.initialNodes[i].name == a) {
+            index = i;
+        }
+        i++;
     }
-    printComparison(states);
-    runMenu(states, candidates);
+    return index;
 }
 
 /* Description: Opens and reads the input file, parsing the number of nodes (N)
@@ -645,29 +665,21 @@ bool readInputFile(string fileName,InputData &data) {
             getline(inFile, line);
             istringstream edge(line);
             edge >> a >> b;
-            int indexa = -1;
-            int indexb = -1;
-            for (int j = 0; j < data.N; j++) {
-                if (data.initialNodes[j].name == a) {
-                    indexa = j;
-                }
-                if (data.initialNodes[j].name == b) {
-                    indexb = j;
-                }
-            }
+            int indexa = indexSearcher(data, a);
+            int indexb = indexSearcher(data, b);
             if (indexa == -1 or indexb == -1) {
-                cout << "[Error] readInputFile: Non-existent node." << endl;
+                cout << "[Error] readInputFile/initialEdges: Non-existent node." << endl;
                 return false;
             } else if(indexa == indexb) {
-                cout << "[Error] readInputFile: The nodes were the same." << endl;
+                cout << "[Error] readInputFile/initialEdges: The nodes were the same." << endl;
                 return false;
             }
             if (!(edge >> w)) {
-                cout << "[Error] readInputFile: The weight was not listed." << endl;
+                cout << "[Error] readInputFile/initialEdges: The weight was not listed." << endl;
                 return false;
             } else {
-                if (!(w < 0)) {
-                    cout << "[Error] readInputFile: The weight can't be negative." << endl;
+                if (w < 0) {
+                    cout << "[Error] readInputFile/initialEdges: The weight can't be negative." << endl;
                     return false;
                 }
                 else {
@@ -675,10 +687,117 @@ bool readInputFile(string fileName,InputData &data) {
                 }
             }
         }
-    }
 
-    //placeholder return
+        // Currently at last initial Edge
+        getline(inFile, line);
+        // Currently at an empty line \n
+        getline(inFile, line);
+        // Currently at header "# FAILED CONNECTION"
+        getline(inFile, line);
+        // Currently at the Failed Connection Edge
+
+        istringstream fcedge(line);
+        fcedge >> a >> b;
+        int indexa = indexSearcher(data, a);
+        int indexb = indexSearcher(data, b);
+        if (indexa == -1 or indexb == -1) {
+            cout << "[Error] readInputFile/failedConnection: Non-existent node." << endl;
+            return false;
+        } else if(indexa == indexb) {
+            cout << "[Error] readInputFile/failedConnection: The nodes were the same." << endl;
+            return false;
+        }
+
+        data.failedEdge.from = min(indexa, indexb);
+        data.failedEdge.to = max(indexa, indexb);
+        // Currently at the Failed Connection Edge
+        getline(inFile, line);
+        // Currently at an empty line \n
+        getline(inFile, line);
+        // Currently at header "# NEW NODE"
+        getline(inFile, line);
+        // Currently at the New Node
+        istringstream node(line);
+        node >> letter >> x >> y;
+        data.newNode.name = letter;
+        data.newNode.x = x;
+        data.newNode.y = y;
+
+        // Currently at the New Node
+        getline(inFile, line);
+        // Currently at an empty line \n
+        getline(inFile, line);
+        // Currently at header "# NEW EDGES"
+        getline(inFile, line);
+        // Currently at the amount of new edges
+        istringstream newedgeheader(line);
+        int E;
+        newedgeheader >> E;
+        for (int i = 0; i < E; i++) {
+            getline(inFile, line);
+            istringstream edge2(line);
+            edge2 >> a >> b;
+            int indexa = indexSearcher(data, a);
+            int indexb = indexSearcher(data, b);
+            if (indexa == -1 or indexb == -1) {
+                cout << "[Error] readInputFile/newEdge: Non-existent node." << endl;
+                return false;
+            } else if(indexa == indexb) {
+                cout << "[Error] readInputFile/newEdge: The nodes were the same." << endl;
+                return false;
+            }
+            if (!(edge2 >> w)) {
+                cout << "[Error] readInputFile/newEdge: The weight was not listed." << endl;
+                return false;
+            } else {
+                if (w < 0) {
+                    cout << "[Error] readInputFile/newEdge: The weight can't be negative." << endl;
+                    return false;
+                }
+                else {
+                    data.newEdges.push_back(Edge(indexa, indexb, w));
+                }
+            }
+        }
+    }
+    else {
+        // File was not found
+        cout << "[Error] readInputFile: File not found" << endl;
+        return false;
+    }
+    // Debug (quitar antes de entregar): Replicate the test_fix.txt file only using InputData data info.
+    cout << "--- test_fix.txt ---" << endl;
+    cout << data.N << " " << data.E << endl << endl << "# NODES" << endl;
+    for (int i = 0; i < data.N; i++) {
+        cout << data.initialNodes[i].name << " " << data.initialNodes[i].x << " " << data.initialNodes[i].y << endl;
+    }
+    cout << endl << "# EDGES" << endl;
+    for (int i = 0; i < data.E; i++) {
+        cout << data.initialNodes[data.initialEdges[i].from].name << " " << data.initialNodes[data.initialEdges[i].to].name << " " << data.initialEdges[i].cost << endl;
+    }
+    cout << endl << "# FAILED CONNECTION" << endl;
+    cout << data.initialNodes[data.failedEdge.from].name << " " << data.initialNodes[data.failedEdge.to].name << endl;
+    cout << endl << "# NEW NODE" << endl;
+    cout << data.newNode.name << " " << data.newNode.x << " " << data.newNode.y << endl;
+    int newEdgecount = data.newEdges.size();
+    cout << endl << "# NEW EDGES" << endl << newEdgecount << endl;
+    for (int i= 0; i < newEdgecount; i++) {
+        cout << data.initialNodes[data.newEdges[i].from].name << " " << data.newNode.name << " " << data.newEdges[i].cost << endl;
+    }
     return true;
+}
+
+/* Description: Displays a prompt message to the user and reads a full line
+-              of text from standard input.
+- Parameters: text - string message printed on screen before reading the input
+- Return Value: string (the line of text entered by the user)
+- Complexity: O(l) l = length of the line read
+ */
+string readText(string text) {
+    cout << text;
+    string input;
+    getline(cin, input);
+    return input;
 }
 
 /* Description: Main function. Asks for the input file, reads and validates
@@ -697,8 +816,10 @@ int main() {
     cout << endl;
     InputData data;
     Graph candidates(0);
-    if (readInputFile(fileName, data) && buildCandidateGraph(candidates, data)) {
-        runSimulation(candidates, data);
+    /* Original if: readInputFile(fileName, data) && buildCandidateGraph(candidates, data)
+    Reduced to just readInputFile(fileName, data) for testing */
+    if (readInputFile(fileName, data)) {
+        // runSimulation(candidates, data);
     } else {
         cout << "No se puede continuar porque el archivo de entrada tiene errores." << endl;
         exitCode = 1;
