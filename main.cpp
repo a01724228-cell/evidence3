@@ -333,7 +333,7 @@ public:
 };
 
 /* Description: the basic Constructor for the Node class with no parameters given.
-It sets the name to a "non-existing" state with '-' and leaves x and y as 0.
+-               It sets the name to a "non-existing" state with '-' and leaves x and y as 0.
 - Parameters: None
 - Return Value: None
 - Complexity: O(1)
@@ -343,7 +343,7 @@ Node::Node(){
 }
 
 /* Description: the basic Constructor for the Node class with parameters given.
-It sets the name, x and y of the Node.
+-               It sets the name, x and y of the Node.
 - Parameters: name - the character that represents the node
 -             x - the (x) coordenate of the position of the node
 -             y - the (y) coordenate of the position of the node
@@ -369,7 +369,7 @@ public:
 };
 
 /* Description: the basic Constructor for the Edge class with no parameters given.
-It does nothing since the class already sets all 3 int variables from, to, and cost to their "null" state.
+-               It does nothing since the class already sets all 3 int variables from, to, and cost to their "null" state.
 - Parameters: None
 - Return Value: None
 - Complexity: O(1)
@@ -379,8 +379,8 @@ Edge::Edge(){
 }
 
 /* Description: the basic Constructor for the Edge class with parameters given.
-It sets from to the minimum value between the parameters "from" and "to", and sets to to the maximum,
-cost is set to the parameter "cost".
+-               It sets from to the minimum value between the parameters "from" and "to", and sets to to the maximum,
+-               cost is set to the parameter "cost".
 
 - Parameters: from - the Node index the edge comes from
 -             to - the Node index the edge ends on
@@ -615,13 +615,69 @@ int indexSearcher(InputData &data, char a) {
     return index;
 }
 
-/* Description: Opens and reads the input file, parsing the number of nodes (N)
-and edges (E), loading the initial nodes into data.initialNodes,
-and validating and loading the initial edges into data.initialEdges.
+/* Description: Computes the MST using Kruskal's
+-              algorithm. Sorts the candidate edges by cost in ascending order
+-              and iteratively selects the cheapest edges that do not form a
+-              cycle using Union-Find.
+- Parameters: edgeList - vector of candidate Edge objects to build the MST from
+-             nodeCount - total number of nodes in the graph
+- Return Value: Configuration (contains the selected MST edges, totalCost, and
+-               isComplete set to true if all nodeCount nodes are connected)
+- Complexity: O(E^2 + E * N)
+ */
+Configuration kruskalMST(vector<Edge> edgeList, int nodeCount) {
+    Configuration outputConfig;
+    // BubleSort the edges
+    int E = edgeList.size();
+    for (int i = 0; i < E-1; i++) {
+        for (int j = 0; j < E-i-1; j++) {
+            if (edgeList[j].cost > edgeList[j+1].cost) {
+                Edge aux = edgeList[j];
+                edgeList[j] = edgeList[j+1];
+                edgeList[j+1] = aux;
+            }
+        }
+    }
+    int k = 0;
+    int nSelected = 0;
+    int* parent = new int[nodeCount];
+    for (int i = 0; i < nodeCount; i++) {
+        parent[i] = i;
+    }
+    int node1 = -1, node2 = -1, node1leader = -1, node2leader = -1;
+    while (nSelected < nodeCount-1 && k < E) {
+        node1 = edgeList[k].from;
+        node2 = edgeList[k].to;
+        node1leader = parent[node1];
+        node2leader = parent[node2];
+        while(parent[node2leader] != node2leader) {
+            node2leader = parent[node2leader];
+        }
+        while (parent[node1leader] != node1leader) {
+            node1leader = parent[node1leader];
+        }
+        if (node2leader != node1leader) {
+            outputConfig.edges.push_back(edgeList[k]);
+            parent[node2leader] = node1leader;
+            nSelected++;
+            outputConfig.totalCost += edgeList[k].cost;
+        }
+        k++;
+    }
+    if (nSelected == nodeCount -1) {
+        outputConfig.isComplete = true;
+    }
+    delete[] parent;
+    return outputConfig;
+}
 
+/* Description: Opens and reads the input file, parsing and validating all
+-              simulation data: initial node and edge counts (N, E), initial
+-              nodes, initial edges, the failed connection edge, the new
+-              expansion node, and the candidate new edges.
 - Parameters: fileName - path or name of the input file to read
--             data - reference to the InputData struct where parsed data is stored
-- Return Value: bool (true if the file was read and validated without errors, false otherwise)
+-             data - reference to the InputData class where parsed data is stored
+- Return Value: bool (true if the file was opened, read, and validated without errors, false otherwise)
 - Complexity: O(N * E)
  */
 bool readInputFile(string fileName,InputData &data) {
